@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import ReactPaginate from 'react-paginate';
 import styles from './App.module.css';
-import { fetchMovies, searchMovies } from '../../services/movieService';
-import type { MoviesResponse, Movie } from '../../services/movieService';
+import { searchMovies } from '../../services/movieService';
+import type { MoviesResponse } from '../../services/movieService';
+import type { Movie } from '../../types/movie';
 import MovieGrid from '../MovieGrid/MovieGrid';
 import SearchBar from '../SearchBar/SearchBar';
 import MovieModal from '../MovieModal/MovieModal';
@@ -16,31 +17,38 @@ const App: React.FC = () => {
     const [query, setQuery] = useState('');
     const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
 
-    // Ми робимо запит тільки на пошук -- початкове завантаження вимкнено
     const fetchFn = () => searchMovies(query, page);
 
-    const { data, isLoading, error } = useQuery<MoviesResponse, Error>(['movies', query, page], fetchFn, {
-        keepPreviousData: true,
-        enabled: !!query, // активуємо запит лише коли query не порожній
-        placeholderData: () => ({ page: 1, total_pages: 1, results: [] }),
-    });
+    const { data, isLoading, isError, isSuccess, error } = useQuery<MoviesResponse, Error>(
+        ['movies', query, page],
+        fetchFn,
+        {
+            enabled: !!query,
+            placeholderData: () => ({ page: 1, total_pages: 1, results: [] }),
+        },
+    );
 
     const movies: Movie[] = data?.results ?? [];
     const totalPages = data?.total_pages ?? 1;
 
-    // показ toast коли пустий результат після успіху
-    React.useEffect(() => {
-        if (data && !isLoading && movies.length === 0 && query) {
+    useEffect(() => {
+        if (isSuccess && movies.length === 0 && query) {
             toast('Пошук не дав результатів', { icon: '🔍' });
         }
-    }, [data, isLoading, movies.length, query]);
+    }, [isSuccess, movies.length, query]);
+
+    const handleSearchSubmit = (formData: FormData) => {
+        const q = (formData.get('query') as string) || '';
+        setQuery(q);
+        setPage(1);
+    };
 
     return (
         <div>
             <Toaster />
             <header className={styles.header}>
                 <a className={styles.brand} href="#">Powered by TMDB</a>
-                <SearchBar onSubmit={(q) => { setQuery(q); setPage(1); }} />
+                <SearchBar onSubmit={handleSearchSubmit} />
             </header>
 
             <main className={styles.container}>
@@ -52,29 +60,30 @@ const App: React.FC = () => {
                     ) : (
                         <>
                             {isLoading && <Loader />}
-                            {error && <ErrorMessage message={error.message} />}
 
-                            {!isLoading && movies.length === 0 && <div>Нічого не знайдено</div>}
+                            {isError && <ErrorMessage message={error?.message ?? 'Error'} />}
 
-                            <MovieGrid movies={movies} onSelect={(m) => setSelectedMovie(m)} />
+                            {isSuccess && (
+                                <>
+                                    <MovieGrid movies={movies} onSelect={(m) => setSelectedMovie(m)} />
 
-                            {totalPages > 1 && (
-                                <ReactPaginate
-                                    pageCount={totalPages}
-                                    pageRangeDisplayed={5}
-                                    marginPagesDisplayed={1}
-                                    onPageChange={({ selected }: { selected: number }) => setPage(selected + 1)}
-                                    forcePage={page - 1}
-                                    containerClassName={styles.pagination}
-                                    activeClassName={styles.active}
-                                    nextLabel="→"
-                                    previousLabel="←"
-                                />
+                                    {totalPages > 1 && (
+                                        <ReactPaginate
+                                            pageCount={totalPages}
+                                            pageRangeDisplayed={5}
+                                            marginPagesDisplayed={1}
+                                            onPageChange={({ selected }: { selected: number }) => setPage(selected + 1)}
+                                            forcePage={page - 1}
+                                            containerClassName={styles.pagination}
+                                            activeClassName={styles.active}
+                                            nextLabel="→"
+                                            previousLabel="←"
+                                        />
+                                    )}
+                                </>
                             )}
 
-                            {selectedMovie && (
-                                <MovieModal movie={selectedMovie} onClose={() => setSelectedMovie(null)} />
-                            )}
+                            {selectedMovie && <MovieModal movie={selectedMovie} onClose={() => setSelectedMovie(null)} />}
                         </>
                     )}
                 </div>
