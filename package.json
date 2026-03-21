@@ -11,7 +11,9 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "@tanstack/react-query": "^4.29.12",
-    "react-paginate": "^8.2.0"
+    "react-paginate": "^8.2.0",
+    "axios": "^1.4.0",
+    "react-hot-toast": "^2.4.0"
   },
   "devDependencies": {
     "typescript": "^5.2.2",

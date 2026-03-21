@@ -1,11 +1,7 @@
 // movieService.ts
 
-export interface Movie {
-    id: number;
-    title: string;
-    overview?: string;
-    poster_path?: string | null;
-}
+import axios from 'axios';
+import type { Movie } from '../types/movie';
 
 export interface MoviesResponse {
     page: number;
@@ -23,49 +19,34 @@ if (!API_KEY && !READ_ACCESS_TOKEN) {
     );
 }
 
+const axiosInstance = axios.create({
+    baseURL: BASE,
+    headers: READ_ACCESS_TOKEN ? { Authorization: `Bearer ${READ_ACCESS_TOKEN}` } : undefined,
+});
+
 export const fetchMovies = async (page = 1): Promise<MoviesResponse> => {
-    const urlBase = `${BASE}/movie/popular?language=en-US&page=${page}`;
-
-    const headers: Record<string, string> = {};
-    let finalUrl = urlBase;
-
-    if (API_KEY) {
-        finalUrl = `${urlBase}&api_key=${API_KEY}`;
-    } else if (READ_ACCESS_TOKEN) {
-        headers['Authorization'] = `Bearer ${READ_ACCESS_TOKEN}`;
-    } else {
+    if (!API_KEY && !READ_ACCESS_TOKEN) {
         throw new Error('TMDB credentials are missing. Set VITE_TMDB_API_KEY or VITE_TMDB_READ_ACCESS_TOKEN in .env');
     }
 
-    const res = await fetch(finalUrl, { headers });
-    if (!res.ok) {
-        const body = await res.text().catch(() => '');
-        throw new Error(`Network response was not ok: ${res.status} ${res.statusText} ${body}`);
-    }
-    const data = await res.json();
-    return data as MoviesResponse;
+    const params: Record<string, any> = { language: 'en-US', page };
+    if (API_KEY) params.api_key = API_KEY;
+
+    const res = await axiosInstance.get<MoviesResponse>('/movie/popular', { params });
+    return res.data;
 };
 
 export const searchMovies = async (query: string, page = 1): Promise<MoviesResponse> => {
-    const q = encodeURIComponent(query.trim());
-    const urlBase = `${BASE}/search/movie?language=en-US&query=${q}&page=${page}`;
-
-    const headers: Record<string, string> = {};
-    let finalUrl = urlBase;
-
-    if (API_KEY) {
-        finalUrl = `${urlBase}&api_key=${API_KEY}`;
-    } else if (READ_ACCESS_TOKEN) {
-        headers['Authorization'] = `Bearer ${READ_ACCESS_TOKEN}`;
-    } else {
+    if (!query.trim()) {
+        throw new Error('Query is empty');
+    }
+    if (!API_KEY && !READ_ACCESS_TOKEN) {
         throw new Error('TMDB credentials are missing. Set VITE_TMDB_API_KEY or VITE_TMDB_READ_ACCESS_TOKEN in .env');
     }
 
-    const res = await fetch(finalUrl, { headers });
-    if (!res.ok) {
-        const body = await res.text().catch(() => '');
-        throw new Error(`Network response was not ok: ${res.status} ${res.statusText} ${body}`);
-    }
-    const data = await res.json();
-    return data as MoviesResponse;
+    const params: Record<string, any> = { language: 'en-US', query, page };
+    if (API_KEY) params.api_key = API_KEY;
+
+    const res = await axiosInstance.get<MoviesResponse>('/search/movie', { params });
+    return res.data;
 };
