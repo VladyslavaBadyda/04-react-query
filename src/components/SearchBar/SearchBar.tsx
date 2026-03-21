@@ -11,15 +11,15 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSubmit }) => {
         e.preventDefault();
 
         const form = e.currentTarget;
-        const fd = new FormData(form);
-        const q = (fd.get('query') as string) || '';
+        const formData = new FormData(form);
+        const query = (formData.get('query') as string) || '';
 
-        if (!q.trim()) {
+        if (!query.trim()) {
             toast.error('Потрібно ввести пошуковий запит');
             return;
         }
 
-        onSubmit(q.trim());
+        onSubmit(query.trim());
     };
 
     return (
