@@ -37,18 +37,12 @@ const App: React.FC = () => {
         }
     }, [isSuccess, movies.length, query]);
 
-    const handleSearchSubmit = (formData: FormData) => {
-        const q = (formData.get('query') as string) || '';
-        setQuery(q);
-        setPage(1);
-    };
-
     return (
         <div>
             <Toaster />
             <header className={styles.header}>
                 <a className={styles.brand} href="#">Powered by TMDB</a>
-                <SearchBar onSubmit={handleSearchSubmit} />
+                <SearchBar onSubmit={(q: string) => { setQuery(q); setPage(1); }} />
             </header>
 
             <main className={styles.container}>

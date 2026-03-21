@@ -3,20 +3,31 @@ import styles from './SearchBar.module.css';
 import toast from 'react-hot-toast';
 
 export interface SearchBarProps {
-    onSubmit: (formData: FormData) => void;
+    // onSubmit отримує сам рядок пошукового запиту
+    onSubmit: (query: string) => void;
+    // необов'язкова функція action яка отримує FormData
+    action?: (formData: FormData) => void;
 }
 
-const SearchBar: React.FC<SearchBarProps> = ({ onSubmit }) => {
+const SearchBar: React.FC<SearchBarProps> = ({ onSubmit, action }) => {
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         const form = e.currentTarget;
         const fd = new FormData(form);
         const q = (fd.get('query') as string) || '';
+
+        if (action) {
+            // якщо передано action — викликаємо його з FormData
+            action(fd);
+            return;
+        }
+
         if (!q.trim()) {
             toast.error('Потрібно ввести пошуковий запит');
             return;
         }
-        onSubmit(fd);
+
+        onSubmit(q.trim());
     };
 
     return (
